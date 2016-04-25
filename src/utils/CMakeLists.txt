@@ -9,6 +9,7 @@ target_include_directories(utils PUBLIC
 
 # Boost
 find_package(Boost 1.55 REQUIRED system serialization program_options unit_test_framework container)
+file(COPY include DESTINATION ${CMAKE_BINARY_DIR}/utils)
 
 # Tests
 ADD_DEFINITIONS(-DBOOST_TEST_DYN_LINK)

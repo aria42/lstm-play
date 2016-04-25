@@ -20,7 +20,7 @@
 #include <cnn/lstm.h>
 
 // Local includes
-#include "utils/src/Utils.h"
+#include <utils/io.h>
 
 struct TrainOptions {
     std::string train_file;
