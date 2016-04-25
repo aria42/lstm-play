@@ -1,0 +1,7 @@
+# CMake
+build/**
+ext/**
+
+# Editors
+.idea/**
+.vscode/**
