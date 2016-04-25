@@ -19,6 +19,9 @@
 #include <cnn/training.h>
 #include <cnn/lstm.h>
 
+// Local includes
+#include "utils/src/Utils.h"
+
 struct TrainOptions {
     std::string train_file;
     std::string dev_file;

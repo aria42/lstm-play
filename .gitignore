@@ -5,3 +5,4 @@ ext/**
 # Editors
 .idea/**
 .vscode/**
+.DS_STORE

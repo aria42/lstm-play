@@ -10,9 +10,8 @@ ExternalProject_Add(cnn
   CMAKE_ARGS        -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/cnn/  
 )
 
-
-# Boost
-find_package(Boost 1.55 REQUIRED system serialization program_options)
+set (CMAKE_CXX_STANDARD 14)
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
 add_subdirectory(src)
 
