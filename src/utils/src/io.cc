@@ -33,13 +33,11 @@ namespace io {
         }
     };
 
-    LineRange::LineRange(std::istream &in) : in_(in) { }
-
     bool LineRange::advance() {
-        if (in_.eof()) {
+        if (in_->eof()) {
             return false;
         }
-        std::getline(in_, value_);
+        std::getline(*in_, value_);
         return true;
     }
 

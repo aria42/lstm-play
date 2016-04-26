@@ -25,17 +25,24 @@ namespace io {
     class LineRange  {
 
         using Iterator = detail::line_iter;
+        using iter_type = detail::line_iter;
 
         public:
-        LineRange(std::istream& in);
+        LineRange(std::unique_ptr<std::istream> in): in_(std::move(in)) {}
         detail::line_iter begin();
         detail::line_iter end();
 
         private:
         friend class detail::line_iter;
-        std::istream& in_;
+        std::unique_ptr<std::istream> in_;
         mutable std::string value_;
         bool advance();
+    };
+
+    template <typename StreamT, typename... Args>
+    LineRange line_range(Args&&... args) {
+        auto uptr = std::make_unique<StreamT>(std::forward<Args>(args)...);
+        return LineRange(std::move(uptr));
     };
 }
 };
