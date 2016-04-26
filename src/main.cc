@@ -155,7 +155,7 @@ int main(int argc, char** argv) {
     std::cerr << "train file is " << opts.train_file << std::endl;
     
     // Build Vocabulary
-    cnn::Dict vocab;       
+    cnn::Dict vocab;
     each_line(opts.train_file, [&vocab](const auto& line) {
         read_sentence(line, vocab);
     });
@@ -172,7 +172,7 @@ int main(int argc, char** argv) {
     for (unsigned int iter = 0; iter < 10; ++iter) {
        double loss = 0.0;
        std::cerr << "[Iteration " << iter << "]" << std::endl;
-       unsigned int num_examples = 0; 
+       unsigned int num_examples = 0;
        each_line(opts.train_file, [&](const auto& line) {          
           {
             auto sent = read_sentence(line, vocab);

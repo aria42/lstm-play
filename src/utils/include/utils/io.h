@@ -26,6 +26,7 @@ namespace io {
 
         using Iterator = detail::line_iter;
         using iter_type = detail::line_iter;
+        using value_type = std::string;
 
         public:
         LineRange(std::unique_ptr<std::istream> in): in_(std::move(in)) {}
