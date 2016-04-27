@@ -14,7 +14,7 @@ namespace io {
             }
         }
 
-        std::string line_iter::operator*() {
+        std::string& line_iter::operator*() {
             assert(parent_);
             return parent_->value_;
         }
@@ -38,6 +38,9 @@ namespace io {
             return false;
         }
         std::getline(*in_, value_);
+        if (value_.length() == 0 && in_->eof()) {
+            return false;
+        }
         return true;
     }
 
