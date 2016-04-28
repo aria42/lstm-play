@@ -51,6 +51,7 @@ namespace range {
 
         struct iterator : std::iterator<std::forward_iterator_tag, OutT> {
             IteratorFn<OutT> iter_fn_;
+            // Pointer to the value contained by `IteratorFn`
             OutT* value_;
 
             const OutT& operator*() {
@@ -71,9 +72,11 @@ namespace range {
             }
 
             bool operator==(const iterator& out) {
+                // if either is null, must both be
                 if (!iter_fn_ || !out.iter_fn_) {
                     return !iter_fn_ && !out.iter_fn_;
                 }
+                // if both are non-null, must be ref =
                 return &iter_fn_ == &out.iter_fn_;
             }
 
@@ -93,8 +96,8 @@ namespace range {
         using value_type = typename iterator::value_type;
 
 
-    private:
-        GeneratorFn<IteratorFn<OutT>> gen_fn_;
+        private:
+            GeneratorFn<IteratorFn<OutT>> gen_fn_;
     };
 
     template <typename Range>
@@ -103,11 +106,13 @@ namespace range {
     /// Transform the elements of a range using a function. The returned
     /// range will 'cosnume' the source iterator (a closure will be the sole
     /// owner of the range), thus the Range&&
+    /// \tparam T must be default constructible and copyable
+    /// \tparam Range a valid range
     template <typename T, typename Range>
     GeneratingRange<T> transform(Range&& range, std::function<T(ElemT<Range>&)>&& fn) {
-        // The outer function owns the range and function and will live
-        // as long as the returned range does
+        // The outer function moves + owns the range and transform function
         auto gen_fn = [&r = range, &f = fn]() {
+            // The inner lambda owns a mutable iterator and a single T value
             return [it = r.begin(), end = r.end(), cur = T(), &f](T& output) mutable {
                 if (it == end) {
                     return false;

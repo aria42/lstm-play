@@ -38,14 +38,13 @@ BOOST_AUTO_TEST_CASE(GenRange) {
 }
 
 BOOST_AUTO_TEST_CASE(MapRange) {
-    auto range = io::line_range<std::stringstream>("1\n2\n3\n");
-    auto ints = range::transform<int>(std::move(range), [](std::string& v) {
+    auto lines = io::line_range<std::stringstream>("1\n2\n3\n");
+    auto ints = range::transform<int>(std::move(lines), [](std::string& v) {
         int idx = atoi(v.c_str());
         return idx;
     });
     std::vector<int> expected({1,2,3});
-    auto actual = range::to_vec(ints);
-    BOOST_TEST(expected == actual);
+    BOOST_TEST(expected == range::to_vec(ints));
 }
 
 
