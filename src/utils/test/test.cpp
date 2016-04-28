@@ -29,7 +29,7 @@ BOOST_AUTO_TEST_CASE(GenRange) {
             };
         };
         auto range = range::GeneratingRange<int>(std::move(gen_fn));
-        auto accum = range::to_vec(range);
+        auto accum = range.to_vec();
         std::vector<int> expected;
         for (int idx=0; idx < 10; ++idx) {
             expected.push_back(idx);
@@ -44,7 +44,7 @@ BOOST_AUTO_TEST_CASE(MapRange) {
         return idx;
     });
     std::vector<int> expected({1,2,3});
-    BOOST_TEST(expected == range::to_vec(ints));
+    BOOST_TEST(expected == ints.to_vec());
 }
 
 

@@ -5,17 +5,38 @@
 namespace utils {
 namespace range {
 
-    template <typename Range, typename OutputIterator>
-    void copy(Range& src, OutputIterator out) {
-        std::copy(src.begin(), src.end(), out);
-    };
+    /// A range implicitly represents a sequence (or range) of values.
+    /// A range does not necessarily store the elements but does provide a begin/end Iterator.
+    /// A range must be re-usable, but not concurrency safe
+    /// \tparam Iterator a sub-class std::iterator or at least having standard std::iterator_traits
+    template <typename Iterator>
+    class range {
 
-    template <typename Range>
-    std::vector<typename Range::value_type> to_vec(Range& src) {
-        using T = typename Range::value_type;
-        std::vector<T> out;
-        copy(src, std::back_inserter(out));
-        return out;
+        public:
+        using iter_type = Iterator;
+        using value_type = typename std::iterator_traits<Iterator>::value_type;
+
+        static_assert(std::is_copy_constructible<value_type>::value,
+                      "Elem type must be copyable");
+        static_assert(std::is_default_constructible<value_type>::value,
+                      "Elem type must be default constructible");
+
+
+        template <typename OutputIterator>
+        void copy(OutputIterator out) {
+            std::copy(this->begin(), this->end(), out);
+        }
+
+        std::vector<value_type> to_vec() {
+            std::vector<value_type> out;
+            this->copy(std::back_inserter(out));
+            return out;
+        }
+
+        virtual Iterator begin() = 0;
+        virtual Iterator end() = 0;
+
+
     };
 
     /// A function that writes sequence of values to T reference. The lifetime of the
@@ -29,75 +50,76 @@ namespace range {
     template <typename T>
     using GeneratorFn = std::function<T()>;
 
-    /// The iterators here are `fat`, they contain
-    /// a copy of a generator function and a pointer to the value
-    template <typename OutT>
-    class GeneratingRange {
+    template <typename T>
+    class GeneratingIterator : public std::iterator<std::forward_iterator_tag, T> {
 
         public:
-        struct iterator;
 
-        iterator begin() {
-            return iterator{std::move(gen_fn_())};
+        const T& operator*() {
+            assert(value_);
+            return *value_;
         }
 
-        iterator end() {
-            return iterator{nullptr};
+        GeneratingIterator operator++() {
+            this->advance();
+            return *this;
         }
 
-        GeneratingRange(GeneratorFn<IteratorFn<OutT>>&& gen_fn)  {
+        void advance() {
+            bool has_next = iter_fn_(*value_);
+            if (!has_next) {
+                iter_fn_ = nullptr;
+            }
+        }
+
+        bool operator==(const GeneratingIterator<T>& out) {
+            // if either is null, must both be
+            if (!iter_fn_ || !out.iter_fn_) {
+                return !iter_fn_ && !out.iter_fn_;
+            }
+            // if both are non-null, must be ref =
+            return &iter_fn_ == &out.iter_fn_;
+        }
+
+        bool operator!=(const GeneratingIterator<T>& out) {
+            return !this->operator==(out);
+        }
+
+        GeneratingIterator(IteratorFn<T>&& iter_fn) {
+            if (iter_fn != nullptr) {
+                iter_fn_ = std::move(iter_fn);
+                this->advance();
+            }
+        }
+
+        private:
+        IteratorFn<T> iter_fn_;
+        // Pointer to the value contained by `IteratorFn`
+        T* value_;
+
+    };
+
+    /// The iterators here are `fat`, they contain
+    /// a copy of a generator function and a pointer to the value
+    template <typename T>
+    class GeneratingRange : public range<GeneratingIterator<T>> {
+
+        public:
+
+        GeneratingIterator<T> begin() override {
+            return GeneratingIterator<T>{std::move(gen_fn_())};
+        }
+
+        GeneratingIterator<T> end() override {
+            return GeneratingIterator<T>{nullptr};
+        }
+
+        GeneratingRange(GeneratorFn<IteratorFn<T>>&& gen_fn)  {
             gen_fn_ = std::move(gen_fn);
         }
 
-        struct iterator : std::iterator<std::forward_iterator_tag, OutT> {
-            IteratorFn<OutT> iter_fn_;
-            // Pointer to the value contained by `IteratorFn`
-            OutT* value_;
-
-            const OutT& operator*() {
-                assert(value_);
-                return *value_;
-            }
-
-            iterator operator++() {
-                this->advance();
-                return *this;
-            }
-
-            void advance() {
-                bool has_next = iter_fn_(*value_);
-                if (!has_next) {
-                    iter_fn_ = nullptr;
-                }
-            }
-
-            bool operator==(const iterator& out) {
-                // if either is null, must both be
-                if (!iter_fn_ || !out.iter_fn_) {
-                    return !iter_fn_ && !out.iter_fn_;
-                }
-                // if both are non-null, must be ref =
-                return &iter_fn_ == &out.iter_fn_;
-            }
-
-            bool operator!=(const iterator& out) {
-                return !this->operator==(out);
-            }
-
-            iterator(IteratorFn<OutT>&& iter_fn) {
-                if (iter_fn != nullptr) {
-                    iter_fn_ = std::move(iter_fn);
-                    this->advance();
-                }
-            }
-        };
-
-        using iter_type = iterator;
-        using value_type = typename iterator::value_type;
-
-
         private:
-            GeneratorFn<IteratorFn<OutT>> gen_fn_;
+            GeneratorFn<IteratorFn<T>> gen_fn_;
     };
 
     template <typename Range>
@@ -106,12 +128,12 @@ namespace range {
     /// Transform the elements of a range using a function. The returned
     /// range will 'cosnume' the source iterator (a closure will be the sole
     /// owner of the range), thus the Range&&
-    /// \tparam T must be default constructible and copyable
+    /// \tparam T must be default constructable and copyable
     /// \tparam Range a valid range
     template <typename T, typename Range>
     GeneratingRange<T> transform(Range&& range, std::function<T(ElemT<Range>&)>&& fn) {
         // The outer function moves + owns the range and transform function
-        auto gen_fn = [&r = range, &f = fn]() {
+        return GeneratingRange<T>([&r = range, &f = fn]() {
             // The inner lambda owns a mutable iterator and a single T value
             return [it = r.begin(), end = r.end(), cur = T(), &f](T& output) mutable {
                 if (it == end) {
@@ -123,8 +145,7 @@ namespace range {
                 ++it;
                 return true;
             };
-        };
-        return GeneratingRange<T>(std::move(gen_fn));
+        });
     };
 }
 }
