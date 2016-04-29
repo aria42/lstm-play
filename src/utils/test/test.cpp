@@ -3,7 +3,6 @@
 #define BOOST_TEST_MODULE UtilsExample
 #include <boost/test/unit_test.hpp>
 
-#include "io.h"
 #include "range.h"
 
 using namespace utils;
@@ -38,12 +37,13 @@ BOOST_AUTO_TEST_CASE(GenRange) {
 }
 
 BOOST_AUTO_TEST_CASE(MapRange) {
-    auto lines = io::line_range<std::stringstream>("1\n2\n3\n");
+    auto lines = range::istream_lines<std::stringstream>("1\n2\n3\n");
     auto ints = range::transform<int>(std::move(lines), [](std::string& v) {
         int idx = atoi(v.c_str());
         return idx;
     });
     std::vector<int> expected({1,2,3});
+    auto is = ints.to_vec();
     BOOST_TEST(expected == ints.to_vec());
 }
 

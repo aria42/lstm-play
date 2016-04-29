@@ -1,8 +1,6 @@
 # Library
-set(SRC src/io.cc)
-set(HDRS include/utils/io.h)
-add_library(utils SHARED ${SRC} ${HDRS})
-set(CMAKE_CXX_FLAGS "-std=c++1y")
+add_library(utils SHARED include/utils/io.h)
+set_target_properties(utils PROPERTIES LINKER_LANGUAGE CXX)
 
 target_include_directories(utils PUBLIC
         "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/utils>"

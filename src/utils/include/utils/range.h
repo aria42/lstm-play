@@ -138,6 +138,9 @@ namespace range {
                     return static_cast<std::string*>(nullptr);
                 }
                 std::getline(*in_ptr, cur_line);
+                if (in_ptr->eof() && cur_line.length() == 0) {
+                    return static_cast<std::string*>(nullptr);
+                }
                 return &cur_line;
             };
         });
