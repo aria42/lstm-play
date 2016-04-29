@@ -20,7 +20,7 @@
 #include <cnn/lstm.h>
 
 // Local includes
-#include <utils/io.h>
+#include <utils/range.h>
 
 struct TrainOptions {
     std::string train_file;
@@ -31,7 +31,7 @@ struct TrainOptions {
     unsigned int layers = 1;
 };
 
-TrainOptions handle_cli(int argc, char** argv) {
+TrainOptions handle_cli(int argc, const char** argv) {
     TrainOptions opts;
     namespace po = boost::program_options;    
     po::options_description desc("\nProgram description");

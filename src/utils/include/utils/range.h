@@ -39,12 +39,11 @@ namespace range {
 
     };
 
-    /// A function that writes sequence of values to T reference. The lifetime of the
-    /// reference is valid until the IteratorFn is called again. Returns true
-    /// if a valid reference was written and false when we're out of elements.
-    /// Nothing is written to T when the function returns false.
+    /// A function that returns sequence of T*. The T pointed to by the return
+    /// value is only valid until the next time the function is called. Returns
+    /// nullptr when the sequence is finished (nullptr is not a valid non-final value)
     template <typename T>
-    using IteratorFn = std::function<bool(T&)>;
+    using IteratorFn = std::function<T*()>;
 
     /// A function that yields a new T when called
     template <typename T>
@@ -66,8 +65,9 @@ namespace range {
         }
 
         void advance() {
-            bool has_next = iter_fn_(*value_);
-            if (!has_next) {
+            value_ = iter_fn_();
+            // done with sequence
+            if (!value_) {
                 iter_fn_ = nullptr;
             }
         }
@@ -125,6 +125,24 @@ namespace range {
     template <typename Range>
     using ElemT = typename Range::value_type;
 
+
+    /// Each time the underlying stream is accessed, the stream
+    /// is constructed from the class and the arguments
+    template <typename StreamT, typename... Args>
+    GeneratingRange<std::string> istream_lines(Args&&... args) {
+        static_assert(std::is_base_of<std::istream, StreamT>::value, "StreamT must have istream base");
+        return GeneratingRange<std::string>([args...]() {
+            auto in_ptr = std::make_shared<StreamT>(std::forward<Args>(args)...);
+            return [in_ptr, cur_line = std::string()]() mutable {
+                if (in_ptr->eof()) {
+                    return static_cast<std::string*>(nullptr);
+                }
+                std::getline(*in_ptr, cur_line);
+                return &cur_line;
+            };
+        });
+    };
+
     /// Transform the elements of a range using a function. The returned
     /// range will 'cosnume' the source iterator (a closure will be the sole
     /// owner of the range), thus the Range&&
@@ -135,15 +153,14 @@ namespace range {
         // The outer function moves + owns the range and transform function
         return GeneratingRange<T>([&r = range, &f = fn]() {
             // The inner lambda owns a mutable iterator and a single T value
-            return [it = r.begin(), end = r.end(), cur = T(), &f](T& output) mutable {
+            return [it = r.begin(), end = r.end(), cur = T(), &f]() mutable {
                 if (it == end) {
-                    return false;
+                    return static_cast<int*>(nullptr);
                 }
                 auto in = *it;
                 cur = f(in);
-                output = cur;
                 ++it;
-                return true;
+                return &cur;
             };
         });
     };
