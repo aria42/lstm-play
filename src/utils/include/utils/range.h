@@ -126,13 +126,17 @@ namespace range {
     using ElemT = typename Range::value_type;
 
 
+    /// A range of the lines of a file
     /// Each time the underlying stream is accessed, the stream
     /// is constructed from the class and the arguments
     template <typename StreamT, typename... Args>
-    GeneratingRange<std::string> istream_lines(Args&&... args) {
+    GeneratingRange<std::string> istream_lines(Args... args) {
         static_assert(std::is_base_of<std::istream, StreamT>::value, "StreamT must have istream base");
         return GeneratingRange<std::string>([args...]() {
-            auto in_ptr = std::make_shared<StreamT>(std::forward<Args>(args)...);
+            // sigh, the C++ lambda don't handle move well,
+            // requires the object be copyable
+            // which uniqe_ptr isn't
+            auto in_ptr = std::make_shared<StreamT>(args...);
             return [in_ptr, cur_line = std::string()]() mutable {
                 if (in_ptr->eof()) {
                     return static_cast<std::string*>(nullptr);

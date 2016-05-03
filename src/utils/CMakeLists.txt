@@ -1,13 +1,8 @@
 # Library
-add_library(utils SHARED include/utils/io.h)
-set_target_properties(utils PROPERTIES LINKER_LANGUAGE CXX)
-
-target_include_directories(utils PUBLIC
-        "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/utils>"
-        "$<INSTALL_INTERFACE:include>" )
+add_library(utils INTERFACE)
 
 # Boost
-find_package(Boost 1.55 REQUIRED system serialization program_options unit_test_framework container)
+find_package(Boost 1.55 REQUIRED system serialization unit_test_framework container)
 file(COPY include DESTINATION ${CMAKE_BINARY_DIR}/utils)
 
 # Tests
@@ -16,3 +11,4 @@ add_executable(utils-test test/test.cpp)
 add_dependencies(utils-test utils)
 target_link_libraries(utils-test ${Boost_LIBRARIES})
 target_link_libraries(utils-test utils)
+target_include_directories(utils-test PUBLIC include/utils)
